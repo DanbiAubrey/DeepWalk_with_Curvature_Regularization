@@ -103,8 +103,7 @@ class abs_curvature_regularization:
         self.W2 = Variable(torch.randn(self.H, self.D_out).type(self.dtype), requires_grad=True)
         
     def feed_forward(self, original_embeddings): 
-        y_pred = original_embeddings.mm(self.W1).mm(self.W2)#(34,34)x(34,34)x(34,34) = (34,34)
-        y_pred = torch.tanh(y_pred)#(34,34)
+        y_pred = torch.tanh(original_embeddings.mm(self.W1)).mm(self.W2)#(34,34)x(34,34)x(34,34) = (34,34)
   
         return y_pred
 
