@@ -1,5 +1,5 @@
 import sys
-from geopy.distance import geodesic
+# from geopy.distance import geodesic
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ class abs_curvature_regularization:
         self.original_embeddings = original#shape(34,multi_dim(in here 34))
         #self.W1 = W
         self.dtype = torch.FloatTensor
-        self.learning_rate = 1e-6#learning_rate
+        self.learning_rate = 0.001#1e-6#learning_rate
         self.walks = walks#e.g., [['24', '24', '25', '25', '24', '31', '32', '18', '18', '33'],[...],...] list 
         self.vectorized_walks = node_to_vector(self.original_embeddings, self.walks)#each item = dictionary (340,)
     
@@ -103,8 +103,8 @@ class abs_curvature_regularization:
         self.W2 = Variable(torch.randn(self.H, self.D_out).type(self.dtype), requires_grad=True)
         
     def feed_forward(self, original_embeddings): 
-        y_pred = original_embeddings.mm(self.W1).mm(self.W2)#(34,34)x(34,34)x(34,34) = (34,34)
-        y_pred = torch.tanh(y_pred)#(34,34)
+        y_pred = torch.tanh(original_embeddings.mm(self.W1)).mm(self.W2)#(34,34)x(34,34)x(34,34) = (34,34)
+        #y_pred = torch.tanh(y_pred)#(34,34)
   
         return y_pred
 
@@ -134,6 +134,8 @@ class abs_curvature_regularization:
                     if int(node_num) < 33:
                         cosine_loss = self.criterion(y_pred[int(node_num)].reshape(1,64), 
                                                      y_pred[int(node_num)+1].reshape(1,64), self.y)
+                        
+
                         cosine_loss.backward(retain_graph=True)
 
                         self.W1.data -= self.learning_rate * self.W1.grad.data
@@ -142,7 +144,7 @@ class abs_curvature_regularization:
                         self.W1.grad.data.zero_()
                         self.W2.grad.data.zero_()
                         
-                        loss_tot += cosine_loss.item()
+                        loss_tot += cosine_loss.item()#scalar value of loss
 
         print("loss_tot:{}".format(loss_tot))
         

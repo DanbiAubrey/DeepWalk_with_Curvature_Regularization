@@ -19,6 +19,7 @@ import pandas as pd
 
 import curvature_regularization
 import mygraph
+import matgraph
 from language_model import Skipgram
 
 from collections import Counter
@@ -72,30 +73,51 @@ def deepwalk_process(args):
   if args.format == "adjacency":
     graph_adjacency, num_nodes, num_edges = text_to_adjacency(args.input)
     G = mygraph.Graph(graph_adjacency, num_nodes, num_edges)#graph object
+    
+    print("\nNumber of nodes: {}".format(G.num_of_nodes))
+    print("\nNumber of edges: {}".format(G.num_of_edges))
+
+    num_walks = G.num_of_nodes * args.number_walks
+
+    print("\nNumber of walks: {}".format(num_walks))
+
+    data_size = num_walks * args.walks_length
+
+    print("\nData size (walks*length): {}".format(data_size))
+    
+    ####-------------------------------------------------------------------------------####
+    ####                                 Random Walking                                ####
+    ####-------------------------------------------------------------------------------####
+    
+    print("\nWalking...")
+    walks = G.build_deep_walk(num_paths=args.number_walks, path_length=args.walks_length, alpha=0, rand=random.Random(args.seed))
+
+    print("\nCounting vertex frequency...")
+    vertex_counts = count_words(walks)# dictionary
+
   elif args.format == "mat":
-    G = graph.load_matfile(args.input, variable_name=args.matfile_variable_name, undirected=args.undirected)
+    G = matgraph.load_matfile(args.input, undirected=args.undirected)
     
-    
-  print("\nNumber of nodes: {}".format(G.num_of_nodes))
-  print("\nNumber of edges: {}".format(G.num_of_edges))
-    
-  num_walks = G.num_of_nodes * args.number_walks
-    
-  print("\nNumber of walks: {}".format(num_walks))
-    
-  data_size = num_walks * args.walks_length
+    print("Number of nodes: {}".format(len(G.nodes())))
 
-  print("\nData size (walks*length): {}".format(data_size))
+    num_walks = len(G.nodes()) * args.number_walks
+
+    print("Number of walks: {}".format(num_walks))
+
+    data_size = num_walks * args.walks_length
+
+    print("Data size (walks*length): {}".format(data_size))
     
-  #Embedding phase  
-  print("\nWalking...")
-  #shape(340 x 40)
-  walks = G.build_deep_walk(num_paths=args.number_walks, path_length=args.walks_length, 
-                            alpha=0, rand=random.Random(args.seed))
-
-  print("\nCounting vertex frequency...")
-  vertex_counts = count_words(walks)# dictionary
-
+    ####-------------------------------------------------------------------------------####
+    ####                                 Random Walking                                ####
+    ####-------------------------------------------------------------------------------####
+    print("\nWalking...")
+    walks = matgraph.build_deep_walk(G, num_paths=args.number_walks,
+                                        path_length=args.walks_length, alpha=0, rand=random.Random(args.seed))
+    vertex_counts = count_words(walks)# dictionary
+####-------------------------------------------------------------------------------####
+####                                    Skip_gram                                  ####
+####-------------------------------------------------------------------------------####    
   print("\nTraining...")
   if args.model == 'skipgram':
     #create skipgram model
@@ -107,81 +129,60 @@ def deepwalk_process(args):
     
     #reload skipgram model
     model = Skipgram.load("skipgram_model")
-    
-    ####-------------------------------------------------------------------------------####
-    ####                              embedding Generation                             ####
-    ####-------------------------------------------------------------------------------####
-    
-    # for t iterations do
-    for t in range(args.epoch):
-        # while not converged do -> minimize embedding loss term
-        model.train(sentences=walks, total_examples=1, epochs=args.epoch, compute_loss=True, callbacks=[callback()])
-        model.wv.save_word2vec_format(args.output)
+   
+    if args.format == "adjacency":
+        # for t iterations do
+        for t in range(args.epoch):
+            # while not converged do -> minimize embedding loss term
+            model.train(sentences=walks, total_examples=1, epochs=args.epoch, compute_loss=True, callbacks=[callback()])
+            model.wv.save_word2vec_format(args.output)
 
-        # load embeddings
-        embedding_results = {}
-        for i in range(G.num_of_nodes):
-            embedding_results[i] = list(model.wv[str(i)])
-            #embedding_results.append(model.wv[str(i)])
+            # load embeddings
+            embedding_results = {}
+            for i in range(G.num_of_nodes):
+                embedding_results[i] = list(model.wv[str(i)])
+                #embedding_results.append(model.wv[str(i)])
+
+            embedding_dim = len(embedding_results[0])
+
+            #64-dim embeddings (shale(34*64))
+            original_embedding = []
+
+            for i in list(embedding_results.keys()):
+                original_embedding.append(embedding_results[i])
+                
+        walks_2 = G.build_deep_walk_for_abs(num_paths=args.number_walks, 
+                                            path_length=args.walks_length_2, alpha=0, rand=random.Random(args.seed))
         
-        embedding_dim = len(embedding_results[0])
+        curvature_reg_model = curvature_regularization.abs_curvature_regularization(walks_2, num_walks, G.num_of_nodes, model.syn1, args.dimension, original_embedding)
         
-        #64-dim embeddings (shale(34*64))
-        original_embedding = []
+        # meet the condition of Theorem 1.
+        curvature_reg_model.optimization()
         
-        for i in list(embedding_results.keys()):
-            original_embedding.append(embedding_results[i])
-            
-            
-#         print(original_embedding)
-#         print(np.array(original_embedding).shape)
-#         exit()
-            
-           
-#     ####-------------------------------------------------------------------------------####
-#     ####                                     PCA                                       ####
-#     ####-------------------------------------------------------------------------------####       
-        
-#         # convert n-dimensional embedding to 2-dim(to satisfy Theorem 1.)
-#         df = pd.DataFrame(columns = range(0,embedding_dim))
+        #minimize the two terms jointly
+                
+    elif args.format == "mat":
+        # for t iterations do
+        for t in range(args.epoch):
+            # while not converged do -> minimize embedding loss term
+            model.train(sentences=walks, total_examples=1, epochs=args.epoch, compute_loss=True, callbacks=[callback()])
+            model.wv.save_word2vec_format(args.output)
 
-#         for i in range(G.num_of_nodes):
-#             df.loc[i] = embedding_results[float(i)]
-    
-#         #print(df)
+            # load generated embeddings
+            embedding_results = {}
+            for i in range(len(G.nodes())):
+                embedding_results[i] = list(model.wv[str(i)])
+                #embedding_results.append(model.wv[str(i)])
 
-#         #Implement PCA to reduce dimensionality of embeddings
+            embedding_dim = len(embedding_results[0])
 
-#         #vector representation(embeddings) list
-#         X = df.values.tolist()
-#         #print(X)
-#         #Computing correlation of matrix
-#         X_corr=df.corr()
+            #shape(node_num, dimension)
+            original_embedding = []
 
-#         #Computing eigen values and eigen vectors
-#         values,vectors=np.linalg.eig(X_corr)
-
-#         #Sorting the eigen vectors coresponding to eigen values in descending order
-#         arg = (-values).argsort()
-#         values = vectors[arg]
-#         vectors = vectors[:, arg]
-
-#         #Taking first 2 components which explain maximum variance for projecting
-#         new_vectors=vectors[:,:2]
-
-#         #Projecting it onto new dimesion with 2 axis
-#         neww_X=np.dot(X,new_vectors)
-#         neww_X = neww_X.real
-
-        ####-------------------------------------------------------------------------------####
-        ####                          curvature regularization phase                       ####
-        ####-------------------------------------------------------------------------------####
-        
-        # while not converged do -> minimize curvature regularization term
-        
-        #generate random walks(walk length :5)
-        
-        walks_2 = G.build_deep_walk_for_abs(num_paths=args.number_walks, path_length=args.walks_length_2, 
+            for i in list(embedding_results.keys()):
+                original_embedding.append(embedding_results[i])
+                
+        walks_2 = matgraph.build_deep_walk_for_abs(G, num_paths=args.number_walks, path_length=args.walks_length_2, 
                             alpha=0, rand=random.Random(args.seed))
         
         curvature_reg_model = curvature_regularization.abs_curvature_regularization(walks_2, num_walks,G.num_of_nodes, model.syn1, args.dimension, original_embedding)
@@ -190,6 +191,15 @@ def deepwalk_process(args):
         curvature_reg_model.optimization()
         
         #minimize the two terms jointly
+           
+        ####-------------------------------------------------------------------------------####
+        ####                          curvature regularization phase                       ####
+        ####-------------------------------------------------------------------------------####
+        
+        # while not converged do -> minimize curvature regularization term
+        
+        #generate random walks(walk length :5)
+        
 
     
   else:
@@ -269,6 +279,7 @@ def main():
   parser.add_argument('--output', required=True, help="output embeddings file")
   parser.add_argument('--epoch', required=True, default=1, type=int, help="traning epoch")# t iteration in Alg.1
   parser.add_argument('--walks-length-2', default=40, type=int)#window size
+  parser.add_argument('--undirected', default=True, type=bool, help='Treat graph as undirected.')
   #parser.add_argument('--number-random-walks', default=33, type=int)#walk length
   
 
