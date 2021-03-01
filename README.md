@@ -19,3 +19,8 @@ DeepWalk_with_Curvature_Regularization
 
 
 ### Evaluate on node classification
+
+
+### Reference
+
+<https://github.com/phanein/deepwalk>
