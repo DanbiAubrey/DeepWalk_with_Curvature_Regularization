@@ -10,7 +10,7 @@ DeepWalk_with_Curvature_Regularization
 </code>
 </pre>
 
-2. blogcatalog
+2. blogcatalog.mat
 <pre>
 <code>
   python main.py --input dataset/blogcatalog.mat --number-walks 80 --walks-length 40 --model skipgram --output blogcatalog.embeddings --epoch 1 --format mat --dimension 128
@@ -27,7 +27,7 @@ DeepWalk_with_Curvature_Regularization
 </code>
 </pre>
 
-2. blogcatalog
+2. blogcatalog.mat
 <pre>
 <code>
   python evaluation.py --emb embeddings/blogcatalog.embeddings --network dataset/blogcatalog.mat --num-shuffle 10 --all
