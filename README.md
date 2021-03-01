@@ -1,7 +1,7 @@
 DeepWalk_with_Curvature_Regularization
 ======================================
 
-## Generate Embeddings with curvature regularization
+### Generate Embeddings with curvature regularization
 
 1. karate.adjacency
 <pre>
@@ -17,3 +17,5 @@ DeepWalk_with_Curvature_Regularization
 </code>
 </pre>  
 
+
+### Evaluate on node classification
