@@ -19,7 +19,7 @@ import torch.nn.functional as F
 #For theorem.1
 
 class abs_curvature_regularization:
-    def __init__(self, walks, num_walks, num_nodes, W, dimension, original):
+    def __init__(self, walks, num_walks, num_nodes, dimension, original, file_format):
         self.D_in = dimension#64(karate.dataset)
         self.D_out = dimension
         self.H = 64
@@ -35,6 +35,7 @@ class abs_curvature_regularization:
         self.learning_rate = 0.001#1e-6#learning_rate
         self.walks = walks#e.g., [['24', '24', '25', '25', '24', '31', '32', '18', '18', '33'],[...],...] list 
         self.vectorized_walks = node_to_vector(self.original_embeddings, self.walks)#each item = dictionary (340,)
+        self.format = file_format
     
     #-------------------------------------------------------------------------------#
     #                       meet the condition of Theorem 1.                        #
@@ -60,7 +61,7 @@ class abs_curvature_regularization:
         self.initialize()
         epoch = 0
         
-        cos_tot = cosine_for_nodes(self.original_embeddings, self.walks, self.dim)
+        cos_tot = cosine_for_nodes(self.original_embeddings, self.walks, self.dim, self.V)
         
 #         # minimize til any part of P'_{ij} is less than pi/2(90 degree)(less than cosine 0)
 #         while any(entire_abs[i] >= 90 for i in range(len(entire_abs))):
@@ -77,11 +78,13 @@ class abs_curvature_regularization:
             #print("shape:{}".format(output.shape))
 
             self.original_embeddings = output
-            cost_tot = cosine_for_nodes(self.original_embeddings, self.walks, self.dim)
+            cost_tot = cosine_for_nodes(self.original_embeddings, self.walks, self.dim, self.V)
             epoch += 1
             print("epoch:{}".format(epoch))
 
-        print("epoch:{}".format(epoch))    
+        print("epoch:{}".format(epoch)) 
+        
+        return output
 
       
         
@@ -104,11 +107,9 @@ class abs_curvature_regularization:
         
     def feed_forward(self, original_embeddings): 
         y_pred = torch.tanh(original_embeddings.mm(self.W1)).mm(self.W2)#(34,34)x(34,34)x(34,34) = (34,34)
-<<<<<<< HEAD
+
         #y_pred = torch.tanh(y_pred)#(34,34)
-=======
->>>>>>> origin/master
-  
+
         return y_pred
 
     def train(self, X, walks):
@@ -134,9 +135,9 @@ class abs_curvature_regularization:
         for walk in walks:
             if len(walk) > 1:
                 for node_num in walk[0:-1]:
-                    if int(node_num) < 33:
-                        cosine_loss = self.criterion(y_pred[int(node_num)].reshape(1,64), 
-                                                     y_pred[int(node_num)+1].reshape(1,64), self.y)
+                    if int(node_num) < self.V - 1:
+                        cosine_loss = self.criterion(y_pred[int(node_num)].reshape(1,int(self.dim)), 
+                                                     y_pred[int(node_num)+1].reshape(1,int(self.dim)), self.y)
                         
 
                         cosine_loss.backward(retain_graph=True)
@@ -179,7 +180,7 @@ def node_to_vector(original_embeddings, walks):
 
     return vectorized_walks
 
-def cosine_for_nodes(original_embeddings, walks, dimension):
+def cosine_for_nodes(original_embeddings, walks, dimension, V):
     cosine_val = []
     original_embeddings = torch.tensor(original_embeddings)
     
@@ -188,7 +189,7 @@ def cosine_for_nodes(original_embeddings, walks, dimension):
     for walk in walks:
             if len(walk) > 1:
                 for node_num in walk[0:-1]:
-                    if int(node_num) < 33:
+                    if int(node_num) < V-1:
 #                     print(original_embeddings[int(node_num)].reshape(1,64))
 #                     exit()
 #                     print(original_embeddings[int(node_num)+1])

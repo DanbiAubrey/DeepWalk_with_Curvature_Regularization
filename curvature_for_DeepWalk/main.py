@@ -154,10 +154,10 @@ def deepwalk_process(args):
         walks_2 = G.build_deep_walk_for_abs(num_paths=args.number_walks, 
                                             path_length=args.walks_length_2, alpha=0, rand=random.Random(args.seed))
         
-        curvature_reg_model = curvature_regularization.abs_curvature_regularization(walks_2, num_walks, G.num_of_nodes, model.syn1, args.dimension, original_embedding)
+        curvature_reg_model = curvature_regularization.abs_curvature_regularization(walks_2, num_walks, G.num_of_nodes, model.syn1, args.dimension, original_embedding, args.format)
         
         # meet the condition of Theorem 1.
-        curvature_reg_model.optimization()
+        regularized_output = curvature_reg_model.optimization()
         
         #minimize the two terms jointly
                 
@@ -185,10 +185,11 @@ def deepwalk_process(args):
         walks_2 = matgraph.build_deep_walk_for_abs(G, num_paths=args.number_walks, path_length=args.walks_length_2, 
                             alpha=0, rand=random.Random(args.seed))
         
-        curvature_reg_model = curvature_regularization.abs_curvature_regularization(walks_2, num_walks,G.num_of_nodes, model.syn1, args.dimension, original_embedding)
+        curvature_reg_model = curvature_regularization.abs_curvature_regularization(walks_2, num_walks,len(G.nodes()), args.dimension, original_embedding, args.format)
         
         # meet the condition of Theorem 1.
-        curvature_reg_model.optimization()
+        regularized_output = curvature_reg_model.optimization()
+        
         
         #minimize the two terms jointly
            

@@ -144,7 +144,7 @@ class Graph(defaultdict):
             cur = path[-1]
             if len(G[cur]) > 0:
                 if rand.random() >= alpha:
-                    if rand.choice(list(G[cur].keys())) != cur:
+                    if rand.choice(list(G[cur])) != cur:
                           path.append(rand.choice(G[cur]))
                     #exclude restart
                     else:
