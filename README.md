@@ -20,6 +20,20 @@ DeepWalk_with_Curvature_Regularization
 
 ### Evaluate on node classification
 
+1. karate.adjacency
+<pre>
+<code>
+  python evaluation.py --emb dataset/blogcatalog.embeddings --network example_graphs/blogcatalog.mat --num-shuffle 10 --all
+</code>
+</pre>
+
+2. blogcatalog
+<pre>
+<code>
+  python evaluation.py --emb embeddings/blogcatalog.embeddings --network dataset/blogcatalog.mat --num-shuffle 10 --all
+</code>
+</pre>
+
 
 ### Reference
 
