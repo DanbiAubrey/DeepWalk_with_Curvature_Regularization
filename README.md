@@ -6,7 +6,7 @@ DeepWalk_with_Curvature_Regularization
 1. karate.adjacency
 <pre>
 <code>
-  python main.py --input karate.adjacency --number-walks 10 --walks-length 40 --model skipgram --output karate_deepwalk.embeddings --epoch 1 
+  python main.py --input dataset/karate.adjacency --number-walks 10 --walks-length 40 --model skipgram --output karate_deepwalk.embeddings --epoch 1 
 </code>
 </pre>
 
