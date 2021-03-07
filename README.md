@@ -20,7 +20,7 @@ DeepWalk_with_Curvature_Regularization
 3. cora.npz (nodes: 2708, edges: 5278)
 <pre>
 <code>
-  python main.py --input dataset/cora/network.npz --number-walks 40 --walks-length 40 --model skipgram --output embeddings/cora.embeddings --epoch 1 --format npz --dimension 128
+  python main.py --input dataset/cora/network.npz --number-walks 10 --walks-length 40 --model skipgram --output embeddings/cora.embeddings --epoch 1 --format npz --dimension 128
 </code>
 </pre>
 
