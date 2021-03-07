@@ -17,7 +17,7 @@ DeepWalk_with_Curvature_Regularization
 </code>
 </pre>  
 
-3. cora.npz (nodes: 2708, edges: 5429)
+3. cora.npz (nodes: 2708, edges: 5278)
 <pre>
 <code>
   python main.py --input dataset/cora/network.npz --number-walks 40 --walks-length 40 --model skipgram --output embeddings/cora.embeddings --epoch 1 --format npz --dimension 128
@@ -40,7 +40,7 @@ DeepWalk_with_Curvature_Regularization
 </code>
 </pre>
 
-3. cora.npz (nodes: 2708, edges: 5429)
+3. cora.npz (nodes: 2708, edges: 5278)
 ### Reference
 
 <https://github.com/phanein/deepwalk>
